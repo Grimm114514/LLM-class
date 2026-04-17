@@ -1,14 +1,3 @@
-"""
-课程作业一：数据预处理与 Tokenizer 分词器训练
-
-本脚本按作业要求实现：
-1. 基于 tokenizers 库，从 mixed_train.txt 训练 BPE 分词器。
-2. 使用基础分词预处理（Whitespace + Punctuation）。
-3. 增加特殊 Token：<|endoftext|>、<|im_start|>、<|im_end|>。
-4. 一次性训练两套词表：6400 与 16384，并保存 json 文件。
-5. 给出 3 个测试样例，展示：Token IDs、Tokens、Decode 还原文本。
-6. 打印 Token 数量和简单压缩率指标，便于写报告中的结果分析。
-"""
 
 import sys
 from pathlib import Path
@@ -24,13 +13,6 @@ from tokenizers.trainers import BpeTrainer
 # ------------------------
 SPECIAL_TOKENS = ["<|endoftext|>", "<|im_start|>", "<|im_end|>"]
 VOCAB_SIZES = [6400, 16384]
-
-# 3 个测试样例：中英混合、偏中文、包含 OOV 场景
-TEST_CASES = [
-    "人工智能正在改变世界，The development of AI is fast.",
-    "今天北京天气不错，我们一起学习Tokenizer与BPE算法。",
-    "这个新词qwerty_zzzz和生僻字𪚥在语料里很少见。",
-]
 
 
 # Windows 终端下尽量保证 UTF-8 输出，减少中文显示异常。
@@ -84,52 +66,11 @@ for vocab_size in VOCAB_SIZES:
 
 
 print("\n" + "=" * 80)
-print("训练完成，开始做压缩率与编码效果对比")
+print("训练完成")
 print("=" * 80)
 
+print("\n已生成分词器文件:")
+for file in saved_tokenizer_files:
+    print(f"- {file.name}")
 
-# ------------------------
-# 2) 加载并测试两个 tokenizer
-# ------------------------
-for tokenizer_file in saved_tokenizer_files:
-    print(f"\n\n########## 当前分词器: {tokenizer_file.name} ##########")
-    tk = Tokenizer.from_file(str(tokenizer_file))
-
-    total_chars = 0
-    total_tokens = 0
-
-    for idx, text in enumerate(TEST_CASES, start=1):
-        enc = tk.encode(text)
-        decoded_text = tk.decode(enc.ids, skip_special_tokens=False)
-
-        token_count = len(enc.ids)
-        char_count = len(text)
-        total_tokens += token_count
-        total_chars += char_count
-
-        compression_ratio = char_count / token_count if token_count > 0 else 0.0
-        unk_count = enc.tokens.count("<|endoftext|>")
-
-        print("\n" + "-" * 80)
-        print(f"样例 {idx}: {text}")
-        print(f"字符数: {char_count}")
-        print(f"Token 数: {token_count}")
-        print(f"字符/Token 压缩率: {compression_ratio:.4f}")
-        print(f"疑似 OOV 回退次数(<|endoftext|>): {unk_count}")
-        print("Token IDs:")
-        print(enc.ids)
-        print("Tokens:")
-        print(enc.tokens)
-        print("Decode 还原文本:")
-        print(decoded_text)
-
-    avg_ratio = total_chars / total_tokens if total_tokens > 0 else 0.0
-    print("\n" + "*" * 80)
-    print(f"{tokenizer_file.name} 的整体统计")
-    print(f"总字符数: {total_chars}")
-    print(f"总 Token 数: {total_tokens}")
-    print(f"平均字符/Token 压缩率: {avg_ratio:.4f}")
-    print("*" * 80)
-
-
-print("\n全部流程结束。你可以将以上输出直接截图用于作业报告的结果模块。")
+print("\n测试脚本请分别运行: test_rare_chars.py 与 test_compression_ratio.py")
