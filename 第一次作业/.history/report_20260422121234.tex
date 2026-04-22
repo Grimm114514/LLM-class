@@ -1,0 +1,85 @@
+\documentclass[a4paper,12pt]{ctexart} % 使用 ctexart 文档类，原生支持中文
+
+% ==================== 宏包引入 ====================
+\usepackage{geometry}       % 页面边距设置
+\usepackage{graphicx}       % 插入图片
+\usepackage{float}          % 图片位置强制固定
+\usepackage{booktabs}       % 三线表
+\usepackage{amsmath}        % 数学公式
+\usepackage{listings}       % 代码块
+\usepackage{xcolor}         % 颜色支持
+\usepackage{hyperref}       % 目录跳转和超链接
+\usepackage{caption}        % 图表标题格式
+\usepackage{subcaption}
+
+% ==================== 页面设置 ====================
+\geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+
+% ==================== 代码高亮设置 ====================
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,
+    postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space},
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    columns=flexible
+}
+\lstset{style=mystyle, language=Python}
+
+% ==================== 文档信息 ====================
+\title{\textbf{大模型课程第一次作业}}
+\author{姓名：张宗桪 \\ 学号：2023K8009991013 \\ 专业：人工智能}
+\date{\today}
+
+% ==================== 正文开始 ====================
+\begin{document}
+
+\pagestyle{plain} % 页面顶部不显示标注，仅在底部显示页码
+
+% 封面
+\maketitle
+\thispagestyle{empty} % 封面不显示页码
+\newpage
+
+% 目录
+\tableofcontents
+\newpage
+\section{实验设计}
+
+
+\subsection{数据集概况}
+
+
+\subsection{核心超参数设置}
+
+
+\section{实验结果}
+
+
+\subsection{训练结果}
+
+
+\subsection{测试结果}
+
+
+\section{结果分析}
+% -------------------- 第一部分 --------------------
+
+\end{document}

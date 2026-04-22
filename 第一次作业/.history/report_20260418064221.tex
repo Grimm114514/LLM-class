@@ -1,0 +1,213 @@
+\documentclass[a4paper,12pt]{ctexart} % 使用 ctexart 文档类，原生支持中文
+
+% ==================== 宏包引入 ====================
+\usepackage{geometry}       % 页面边距设置
+\usepackage{graphicx}       % 插入图片
+\usepackage{float}          % 图片位置强制固定
+\usepackage{booktabs}       % 三线表
+\usepackage{amsmath}        % 数学公式
+\usepackage{listings}       % 代码块
+\usepackage{xcolor}         % 颜色支持
+\usepackage{hyperref}       % 目录跳转和超链接
+\usepackage{caption}        % 图表标题格式
+\usepackage{subcaption}
+
+% ==================== 页面设置 ====================
+\geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+
+% ==================== 代码高亮设置 ====================
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,
+    postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space},
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    columns=flexible
+}
+\lstset{style=mystyle, language=Python}
+
+% ==================== 文档信息 ====================
+\title{\textbf{自然语言处理实验报告}\\ \large 基于RNN与CNN的词向量训练与对比分析}
+\author{姓名：张宗桪 \\ 学号：2023K8009991013 \\ 专业：人工智能}
+\date{\today}
+
+% ==================== 正文开始 ====================
+\begin{document}
+
+\pagestyle{plain} % 页面顶部不显示标注，仅在底部显示页码
+
+% 封面
+\maketitle
+\thispagestyle{empty} % 封面不显示页码
+\newpage
+
+% 目录
+\tableofcontents
+\newpage
+
+% -------------------- 第一部分 --------------------
+\section{实验目的与任务}
+
+本实验旨在通过构建神经网络语言模型，利用《人民日报》语料库训练汉语词向量，并对比分析循环神经网络（RNN）与卷积神经网络（CNN）在特征提取和词向量生成上的差异。
+
+主要任务包括：
+\begin{enumerate}
+    \item 数据预处理：清洗语料，构建词表，将文本转换为索引序列。
+    \item 模型构建：分别搭建 RNN 和 CNN 模型。
+    \item 词向量提取：从 Embedding 层获取词向量。
+    \item 对比分析：计算并对比两个模型生成的词向量在语义相似度上的表现。
+\end{enumerate}
+
+% -------------------- 第二部分 --------------------
+\section{实验原理与设置}
+
+\subsection{模型架构}
+
+\subsubsection{RNN 模型}
+RNN 模型通过捕捉序列的时间依赖性来学习语义。本实验采用单向 RNN，结构如下：
+\begin{itemize}
+    \item \textbf{Embedding 层}：将词索引映射为稠密向量。
+    \item \textbf{RNN 层}：处理输入序列，保留上下文信息。
+    \item \textbf{全连接层}：将最后一个时间步的隐状态映射为词表概率分布。
+\end{itemize}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{./figures/RNN.png}
+    \caption{RNN 模型结构示意图}
+\end{figure}
+\subsubsection{CNN 模型 }
+CNN 模型通过滑动窗口提取局部特征。本实验结构如下：
+\begin{itemize}
+    \item \textbf{Embedding 层}：同上。
+    \item \textbf{Conv1d 层}：一维卷积，核大小为 2 。
+    \item \textbf{Max Pooling 层}：全局最大池化，提取最显著特征。
+    \item \textbf{全连接层}：输出预测概率。
+\end{itemize}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{./figures/CNN.png}
+    \caption{CNN 模型结构示意图}
+\end{figure}
+\subsection{实验参数设置}
+\begin{table}[H]
+    \centering
+    \caption{实验超参数设置}
+    \begin{tabular}{lc}
+        \toprule
+        \textbf{参数名} & \textbf{数值} \\
+        \midrule
+        词表大小  & 1000 \\
+        词向量维度  & 15 \\
+        输入序列长度  & 5 \\
+        批大小  & 64 \\
+        学习率  & 0.001 \\
+        训练轮数  & 30 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+% -------------------- 第三部分 --------------------
+\section{实验步骤与具体实现}
+
+\subsection{数据预处理}
+利用 Python 对《人民日报》1998年1月语料进行清洗。
+\begin{itemize}
+    \item \textbf{去噪}：剔除词性标记、数字、标点符号及非中文字符，仅保留纯汉字实词。
+    \item \textbf{截断}：根据词频统计，保留前 1000 个高频词，其余标记为 \texttt{<UNK>}。
+    \item \textbf{数据集构建}：采用滑动窗口法，取前 5 个词预测第 6 个词。
+\end{itemize}
+
+\subsection{核心代码实现}
+下为 RNN 模型定义的关键代码片段：
+
+\begin{lstlisting}
+class RNNModel(nn.Module):
+    def __init__(self, vocab_size, embed_dim, hidden_dim):
+        super(RNNModel, self).__init__()
+        self.embedding = nn.Embedding(vocab_size, embed_dim)
+        self.rnn = nn.RNN(embed_dim, hidden_dim, batch_first=True)
+        self.fc = nn.Linear(hidden_dim, vocab_size)
+
+    def forward(self, x):
+        embeds = self.embedding(x)
+        out, _ = self.rnn(embeds)
+        return self.fc(out[:, -1, :])
+\end{lstlisting}
+下为 CNN 模型定义的关键代码片段：
+\begin{lstlisting}
+class CNNModel(nn.Module):
+    def __init__(self, vocab_size, embed_dim, seq_len):
+        super(CNNModel, self).__init__()
+        self.embedding = nn.Embedding(vocab_size, embed_dim)
+        self.conv1 = nn.Conv1d(in_channels=embed_dim, out_channels=32, kernel_size=2)       
+        self.pool = nn.AdaptiveMaxPool1d(1)        
+        self.fc = nn.Linear(32, vocab_size)
+    def forward(self, x):
+        embeds = self.embedding(x)
+        embeds = embeds.permute(0, 2, 1)
+        x = torch.relu(self.conv1(embeds))
+        x = self.pool(x).squeeze(-1)   
+        return self.fc(x)
+\end{lstlisting}
+% -------------------- 第四部分 --------------------
+\section{实验结果与分析}
+\section{训练损失曲线}
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/CNN_loss_curve.png}
+        \caption{CNN 训练损失曲线}
+        \label{fig:sub1}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/RNN_loss_curve.png}
+        \caption{RNN 训练损失曲线}
+        \label{fig:sub2}
+    \end{subfigure}
+    \caption{训练损失曲线对比}
+    \label{fig:overall}
+\end{figure}
+在训练30批次的情况下，RNN的损失更低，故认定RNN的词向量效果更好。
+\subsection{词向量展示}
+
+\begin{table}[H]
+    \centering
+    \caption{CNN与RNN模型词向量示例（前8维）}
+    \small
+    \begin{tabular}{c|cccccccc}
+        \toprule
+        \textbf{词} & \textbf{$d_1$} & \textbf{$d_2$} & \textbf{$d_3$} & \textbf{$d_4$} & \textbf{$d_5$} & \textbf{$d_6$} & \textbf{$d_7$} & \textbf{$d_8$} \\
+        \midrule
+        \multicolumn{9}{c}{\textit{CNN 模型}} \\
+        \midrule
+        中国 & -1.02 & 0.74 & 0.56 & -0.32 & -0.55 & -1.07 & -0.86 & -0.67 \\
+        \midrule
+        \multicolumn{9}{c}{\textit{RNN 模型}} \\
+        \midrule
+        中国 & 0.17 & 1.34 & 0.77 & -2.23 & -0.17 & -2.03 & -0.28 & 0.93 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+\subsection{词向量对比分析}
+我们选用例如“中国”、“经济”、“发展”等高频词进行对比分析。
+\end{document}
