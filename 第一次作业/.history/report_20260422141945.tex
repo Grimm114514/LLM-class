@@ -1,0 +1,124 @@
+\documentclass[a4paper,12pt]{ctexart} % 使用 ctexart 文档类，原生支持中文
+
+% ==================== 宏包引入 ====================
+\usepackage{geometry}       % 页面边距设置
+\usepackage{graphicx}       % 插入图片
+\usepackage{float}          % 图片位置强制固定
+\usepackage{booktabs}       % 三线表
+\usepackage{amsmath}        % 数学公式
+\usepackage{listings}       % 代码块
+\usepackage{xcolor}         % 颜色支持
+\usepackage{hyperref}       % 目录跳转和超链接
+\usepackage{caption}        % 图表标题格式
+\usepackage{subcaption}
+
+% ==================== 页面设置 ====================
+\geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+
+% ==================== 代码高亮设置 ====================
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,
+    postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space},
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    columns=flexible
+}
+\lstset{style=mystyle, language=Python}
+
+% ==================== 文档信息 ====================
+\title{\textbf{大模型课程第一次作业}}
+\author{姓名：张宗桪 \\ 学号：2023K8009991013 \\ 专业：人工智能}
+\date{\today}
+
+% ==================== 正文开始 ====================
+\begin{document}
+
+\pagestyle{plain} % 页面顶部不显示标注，仅在底部显示页码
+
+% 封面
+\maketitle
+\thispagestyle{empty} % 封面不显示页码
+\newpage
+
+% 目录
+\tableofcontents
+\newpage
+\section{实验设计}
+
+
+\subsection{数据集概况}
+本次实验设置了两款数据集如下
+
+\begin{table}[H]
+    \centering
+    \caption{实验所用数据集说明}
+    \begin{tabular}{p{0.2\textwidth} p{0.72\textwidth}}
+        \toprule
+        数据集名称 & 数据内容 \\
+        \midrule
+        纯英文数据集 & 课程提供的英文新闻评论数据。 \\
+        中英混合数据集 & 一半为新华日报官方标注数据集，另一半为上述英文新闻评论数据。 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{核心超参数设置}
+
+\begin{table}[H]
+    \centering
+    \caption{BPE 训练核心超参数设置}
+    \begin{tabular}{p{0.3\textwidth} p{0.62\textwidth}}
+        \toprule
+        参数名称 & 参数设置 \\
+        \midrule
+        词表大小 & 6400 与 16000 \\
+        最小词频 & 2 \\
+        特殊符号 & \texttt{<|endoftext|>}、\texttt{<|im\_start|>}、\texttt{<|im\_end|>} \\
+
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+
+\subsubsection{简要说明}
+BPE 的核心思想是不断寻找语料中出现频率最高的相邻符号对，并将其合并为一个新的 Token 加入词表。该过程重复进行，直到词表大小达到预设上限，或不存在满足阈值条件的可合并符号对。通过这种方式，BPE 在控制词表规模的同时，能够较好地处理未登录词与稀有词。
+
+本次实验中 BPE 的处理流程如下：
+\begin{enumerate}
+    \item \textbf{预分词}：先按空白切分，再将标点独立，避免跨词合并。
+    \item \textbf{初始化词表}：将语料拆解为最基础的字符（或字节）单元，构成初始词表。
+    \item \textbf{统计与合并}：统计当前语料中所有相邻 Token 对的频次，选择最高频的一对，合并为新 Token（如 \texttt{th}），并在语料中完成对应替换。
+    \item \textbf{循环迭代}：重复上述统计与合并步骤，直到词表大小达到预设 \texttt{vocab\_size}，或不存在出现频率达到 \texttt{min\_frequency} 的候选符号对。
+\end{enumerate}
+在超参数选择上，使用6400 和 16,000 两种词表大小设置，能够观察到不同粒度的 Token 划分对模型性能的影响。同时，设置最小词频为2，确保合并的符号对具有一定的代表性，避免过度细分导致词表过大。
+\section{实验结果}
+
+
+\subsection{训练结果}
+
+
+\subsection{测试结果}
+
+
+\section{结果分析}
+% -------------------- 第一部分 --------------------
+
+\end{document}
