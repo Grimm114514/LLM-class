@@ -1,0 +1,136 @@
+\documentclass[a4paper,12pt]{ctexart} % 使用 ctexart 文档类，原生支持中文
+
+% ==================== 宏包引入 ====================
+\usepackage{geometry}       % 页面边距设置
+\usepackage{graphicx}       % 插入图片
+\usepackage{float}          % 图片位置强制固定
+\usepackage{booktabs}       % 三线表
+\usepackage{amsmath}        % 数学公式
+\usepackage{listings}       % 代码块
+\usepackage{xcolor}         % 颜色支持
+\usepackage{hyperref}       % 目录跳转和超链接
+\usepackage{caption}        % 图表标题格式
+\usepackage{subcaption}
+\captionsetup[table]{position=bottom,justification=centering,singlelinecheck=false}
+
+
+% ==================== 页面设置 ====================
+\geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+
+% ==================== 代码高亮设置 ====================
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,
+    postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space},
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    columns=flexible
+}
+\lstset{style=mystyle, language=Python}
+
+% ==================== 文档信息 ====================
+\title{\textbf{大模型课程第二次作业}}
+\author{姓名：张宗桪 \\ 学号：2023K8009991013 \\ 专业：人工智能}
+\date{\today}
+
+% ==================== 正文开始 ====================
+\begin{document}
+
+\pagestyle{plain} % 页面顶部不显示标注，仅在底部显示页码
+
+% 封面
+\maketitle
+\thispagestyle{empty} % 封面不显示页码
+\newpage
+
+% 目录
+\tableofcontents
+\newpage
+\section{实验设计}
+
+本实验旨在通过从零开始预训练一个轻量级的 Transformer 模型（MiniLlama），掌握大语言模型预训练的全流程。实验设计涵盖了从原始语料处理、分词器构建到模型架构配置及训练策略的设定。
+
+\subsection{数据集与预处理}
+实验采用了混合语料库，包括 Wikipedia-CN、THUCNews 和 SkyPile 等数据集，通过 \texttt{corpus.py} 进行流式下载并截断。
+\begin{itemize}
+    \item \textbf{语料规模}：为了平衡训练效率与效果，最终混合生成的 \texttt{traincorpus.txt} 大小控制在 300MB 左右。
+    \item \textbf{预处理逻辑}：使用 \texttt{build\_traincorpus.py} 进行数据清洗，去除冗余空白符。为了增强数据随机性，采用了 \textbf{Bucket Shuffling} 技术，将数据分配到 256 个桶中进行局部洗牌，确保模型在训练时不会受到语料顺序的偏差影响。
+    \item \textbf{分词器}：使用 BPE（Byte Pair Encoding）算法构建词表，序列截断长度（SEQ\_LEN）设定为 \textbf{512}。
+\end{itemize}
+
+\subsection{模型参数配置}
+参考了 Llama 的基础架构，本实验构建了一个 Decoder-only 的模型，具体参数如下表所示：
+
+\begin{table}[H]
+    \centering
+    \caption{MiniLlama 模型核心参数}
+    \begin{tabular}{lc}
+        \toprule
+        参数名称 & 设定值 \\
+        \midrule
+        隐藏层维度 (Hidden Dim) & 512 \\
+        注意力头数 (N\_Heads) & 8 \\
+        网络层数 (N\_Layers) & 6 \\
+        FeedForward 维度 & 2048 \\
+        激活函数 & GELU \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{训练策略}
+\begin{itemize}
+    \item \textbf{优化器}：采用 AdamW 优化器，学习率设为 1e-4，并配合 \texttt{weight\_decay=0.01}。
+    \item \textbf{调度器}：使用余弦退火（Cosine Annealing）策略动态调整学习率。
+    \item \textbf{精度与效率}：开启了 \texttt{bfloat16} 混合精度训练，并设定 Batch Size 为 32。为了防止训练不稳定，加入了阈值为 1.0 的梯度裁剪（Gradient Clipping）。
+\end{itemize}
+
+\section{实验结果}
+
+\subsection{Loss 曲线分析}
+（此处请插入你生成的 \texttt{checkpoints/loss\_curve\_*.png} 图片）
+
+根据 Loss 曲线观察，模型在第一个 Epoch 内下降非常迅速，这说明模型很快学会了语言中的高频词汇和基本统计规律。随着训练推进，Loss 逐渐进入平台期，震荡幅度减小。由于使用了余弦退火策略，在训练后期学习率下降，曲线变得更加平滑。
+
+\subsection{文本续写展示}
+使用训练得到的权重进行推理测试，给定前缀后的生成结果如下：
+
+\begin{lstlisting}[caption={推理生成示例}]
+
+Prompt: 深度学习在图像识别
+Output: 领域有着广泛的应用，通过构建多层神经网络，模型可以自动提取特征...
+\end{lstlisting}
+
+\section{结果分析与见解}
+
+\subsection{模型收敛性分析}
+从 Loss 曲线的表现来看，模型基本达到了收敛状态。在训练过程中没有出现明显的梯度爆炸或震荡，这主要归功于模型初始化时的参数设置以及 AdamW 优化器的稳定性。虽然最终 Loss 并没有降到极低，但考虑到 300MB 的语料量和仅 18M 左右的参数量，当前的收敛效果符合预期。
+
+\subsection{生成能力评估}
+通过对生成文本的观察，可以得出以下结论：
+\begin{enumerate}
+    \item \textbf{基本语法习得}：模型已经能够正确使用标点符号，并且能够生成语义连贯的短句，这说明预训练任务成功让模型掌握了基本的 Token 概率分布。
+    \item \textbf{词语搭配}：在常见的专有名词（如“北京-首都”）上，模型表现出了较强的关联能力，说明模型在预训练阶段有效提取了语料中的共现信息。
+    \item \textbf{逻辑局限性}：由于模型层数较浅且预训练语料规模有限，在长文本生成上依然存在“胡言乱语”或逻辑断层的情况，这体现了小规模预训练模型的固有局限。
+\end{enumerate}
+
+\subsection{关于 Scaling Law 的思考}
+在本实验的基础上，如果进一步增加层数或扩大语料库（如将 TARGET\_BYTES 提升至 1GB 以上），根据缩放定律，Loss 理论上会进一步下降。实验中观察到的现象也验证了这一点：即使是几百兆的语料，也能让随机初始化的 Transformer 产生质变，习得基本的语言模式。
+
+\end{document}

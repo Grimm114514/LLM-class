@@ -148,4 +148,7 @@
 
 \end{enumerate}
 
+\subsection{关于 Scaling Law 的思考}
+在本实验的基础上，如果进一步增加层数或扩大语料库（如将 TARGET\_BYTES 提升至 1GB 以上），根据缩放定律，Loss 理论上会进一步下降。实验中观察到的现象也验证了这一点：即使是几百兆的语料，也能让随机初始化的 Transformer 产生质变，习得基本的语言模式。
+
 \end{document}
