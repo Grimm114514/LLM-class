@@ -1,0 +1,227 @@
+\documentclass[a4paper,12pt]{ctexart}
+
+% ==================== 宏包引入 ====================
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+
+\captionsetup[table]{position=bottom,justification=centering,singlelinecheck=false}
+\graphicspath{{./}}
+
+% ==================== 页面设置 ====================
+\geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+\setlength{\emergencystretch}{3em}
+
+% ==================== 代码高亮设置 ====================
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space},
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    columns=flexible
+}
+\lstset{style=mystyle, language=Python}
+
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+% ==================== 文档信息 ====================
+\title{\textbf{大模型课程第三次作业报告}\\SFT 监督微调与 DPO 偏好对齐}
+\author{姓名：张宗桪 \\ 学号：2023K8009991013 \\ 专业：人工智能}
+\date{\today}
+
+% ==================== 正文开始 ====================
+\begin{document}
+
+\pagestyle{plain}
+
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\tableofcontents
+\newpage
+
+\section{实验设计}
+
+\subsection{总体思路}
+
+本次实验以 \texttt{Qwen/Qwen2.5-0.5B} 作为基座模型，主要比较三个阶段的输出差异：原始基座模型、经过 SFT 监督微调后的模型，以及继续经过 DPO 偏好对齐后的模型。整体思路是先用 SFT 让模型学习固定的中文回答格式，再用 DPO 让模型在两个候选回答之间更偏向质量较高的回答。
+
+\begin{table}[H]
+    \centering
+    \begin{tabularx}{\textwidth}{L{0.23\textwidth}Y}
+        \toprule
+        阶段 & 目标 \\
+        \midrule
+        基座模型 & 作为对照组，观察模型在没有针对性微调时的回答质量。 \\
+        SFT 模型 & 通过标准答案学习回答格式和基本任务风格，减少跑题和无关续写。 \\
+        DPO 模型 & 通过优质/劣质回答对学习偏好，使模型更倾向于清晰、准确、克制的回答。 \\
+        \bottomrule
+    \end{tabularx}
+    \caption{实验整体思路}
+\end{table}
+
+\subsection{数据与模板}
+
+实验数据分为 SFT 数据和 DPO 偏好数据两部分。SFT 数据每条样本包含用户指令、可选输入信息和标准回答；DPO 数据每条样本包含同一个问题下的优质回答和劣质回答。这样设计的原因是：SFT 更适合教模型“应该怎样回答”，DPO 更适合教模型“哪种回答更好”。
+
+\begin{table}[H]
+    \centering
+    \begin{tabularx}{\textwidth}{L{0.22\textwidth}L{0.18\textwidth}Y}
+        \toprule
+        数据类型 & 样本数量 & 构造方式 \\
+        \midrule
+        SFT 数据 & 100 条 & 使用“用户指令 + 输入信息 + 标准回答”的形式，训练模型模仿目标回答。 \\
+        DPO 偏好数据 & 100 条 & 使用“问题 + chosen + rejected”的形式，其中 chosen 是更符合要求的回答，rejected 是质量较差的回答。 \\
+        \bottomrule
+    \end{tabularx}
+    \caption{实验数据构造}
+\end{table}
+
+Prompt Template 方面，SFT 阶段主要要求模型扮演一个“可靠、克制、实用的中文助手”，回答时先给结论，再给解释，最后补充注意事项。DPO 阶段在此基础上进一步强调事实优先、结构清晰、语气友好和安全合规。这样可以让两个阶段的训练目标保持一致，只是训练信号从“模仿标准答案”变成了“偏好更好的答案”。
+
+\subsection{训练参数}
+
+本次实验只训练 1 轮，主要目的是观察 SFT 和 DPO 对模型输出的影响。关键参数如下：
+
+\begin{table}[H]
+    \centering
+    \begin{tabularx}{\textwidth}{L{0.30\textwidth}L{0.28\textwidth}L{0.28\textwidth}}
+        \toprule
+        参数 & SFT 阶段 & DPO 阶段 \\
+        \midrule
+        初始模型 & \texttt{Qwen/Qwen2.5-0.5B} & SFT 后的模型 \\
+        训练数据量 & 100 条 & 100 条偏好样本 \\
+        等效 batch size & 4 & 4 \\
+        学习率 & \texttt{2e-5} & \texttt{5e-6} \\
+        训练轮数 & 1 & 1 \\
+        最大长度 & 512 & - \\
+        DPO 的 \texttt{beta} & - & 0.1 \\
+        参考模型 & - & SFT 后的模型 \\
+        \bottomrule
+    \end{tabularx}
+    \caption{SFT 与 DPO 关键训练参数}
+\end{table}
+
+DPO 中的 \texttt{beta} 是比较关键的参数，它控制模型偏离参考模型的程度。这里设置为 0.1，含义是既希望模型学习偏好数据，又不希望它一下子偏离 SFT 模型太远。由于本次数据量只有 100 条，训练轮数也只有 1 轮，所以整体设置偏保守，主要目标是观察完整流程和趋势。
+
+\section{实验结果}
+
+\subsection{SFT 训练 Loss 曲线}
+
+SFT 阶段的训练 Loss 曲线如下图所示：
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.82\textwidth]{fig_sft_loss.png}
+    \caption{SFT Training Loss Curve}
+    \label{fig:sft-loss}
+\end{figure}
+
+从图 \ref{fig:sft-loss} 可以看到，Loss 在前半段下降比较明显，从一开始较高的位置很快降到 1 以下，后面继续下降但速度变慢，中间有一次小幅波动。这个现象基本符合我对 SFT 的预期：模型一开始还没有很好地适应固定回答格式，所以损失比较高；训练若干 step 后，它逐渐学会模板里的“结论-解释-注意事项”这种结构，Loss 明显降低。后期的波动说明训练并不是完全平滑的，原因可能和数据量较小、batch 较小有关。
+
+\subsection{DPO Reward Margin 曲线}
+
+DPO 阶段的隐式奖励差距（Reward Margin）曲线如下图所示：
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.82\textwidth]{fig_dpo_reward_margin.png}
+    \caption{DPO Reward Margin Curve}
+    \label{fig:dpo-margin}
+\end{figure}
+
+Reward Margin 可以理解为模型给优质回答和劣质回答打分之间的差距。图 \ref{fig:dpo-margin} 中，Reward Margin 总体从较低位置上升到 1 以上，说明训练过程中模型越来越能把 \texttt{chosen} 和 \texttt{rejected} 区分开。最后一个点略有下降，但仍明显高于初始值，所以整体趋势还是有效的。
+
+我认为这说明 DPO 阶段确实学到了一部分偏好信号：它不是单纯降低语言模型 Loss，而是在训练模型更偏向清晰、规范、风险更低的回答。不过因为训练数据比较少，曲线只能说明偏好区分能力有所增强，不能直接说明所有真实测试问题都能回答正确。
+
+\subsection{Case 对比结果}
+
+为了更直观看出微调前后的变化，我选取了 3 个相同测试问题，对比基座模型、SFT 模型和 DPO 模型的输出表现。
+
+{\small
+\begin{longtable}{L{0.20\textwidth}L{0.22\textwidth}L{0.22\textwidth}L{0.22\textwidth}}
+    \toprule
+    测试问题 & 基座模型输出表现 & SFT 模型输出表现 & DPO 模型输出表现 \\
+    \midrule
+    什么是 SFT 和 DPO，它们分别解决什么问题？
+    & 基座模型没有回答当前问题，而是转到 Python 列表示例，明显出现了跑题和续写模板的问题。
+    & SFT 模型给出了缩写解释，但把 SFT 和 DPO 理解成了状态转换函数、决策探索策略，事实不正确。
+    & DPO 模型回答更短，但仍把 SFT/DPO 解释成其他含义，没有真正答到微调和偏好优化。 \\
+    \midrule
+    为什么 DPO 中要设置 beta 参数？
+    & 基座模型只泛泛地说 beta 太大或太小会影响稳定性，没有联系 DPO。
+    & SFT 模型把 beta 解释成金融领域的风险指标，属于概念迁移错误。
+    & DPO 模型仍然把 DPO 误解成动态规划优化，但回答结构更完整，也提到了 beta 控制权重和收敛。 \\
+    \midrule
+    如何平衡“遵规蹈矩”和“创造力”？
+    & 基座模型回答很长，并继续生成多个无关问答，存在明显的无脑续写。
+    & SFT 模型输出明显变短，能围绕“规范”和“创新”给出一句话回答。
+    & DPO 模型也比较简短，但内容过于概括，信息量不足。 \\
+    \bottomrule
+    \caption{基座模型、SFT 模型与 DPO 模型的 Case 对比}
+\end{longtable}
+}
+
+从这 3 个例子看，模型的变化不是“直接变聪明”，而是更像先学会了回答形式，再逐渐减少一些无关续写。尤其是第 3 个问题，基座模型会连续补出很多不相关问答，而 SFT 和 DPO 后的输出明显短了很多。另一方面，第 1、2 个问题也暴露出一个很实际的问题：如果训练数据没有足够覆盖课程概念，模型仍然会把缩写解释错。
+
+\section{结果分析}
+
+\subsection{SFT 后是否摆脱了无脑续写}
+
+从 Loss 曲线和 Case 对比来看，SFT 后模型有一定改善，但没有完全摆脱“无脑续写”。比较明显的改善是输出形式变得更像训练模板，回答更短，也更愿意按“结论-理由”的方式组织内容。第 3 个 Case 中，基座模型在回答后继续编出多个问答，而 SFT 模型只给出一句较集中的回答，这说明监督微调确实约束了一部分生成习惯。
+
+但是 SFT 也有不足。第 1 个问题中，SFT 把 SFT 和 DPO 分别解释成“状态转换函数”和“决策探索策略”；第 2 个问题中，又把 beta 解释成金融风险指标。这说明 SFT 学到的更多是回答格式和部分语言风格，而不是稳定掌握课程概念。由于训练数据只有 100 条，且训练 1 轮，模型对专业缩写的理解仍然容易受预训练知识或随机生成影响。
+
+\subsection{DPO 对回答质量的提升}
+
+DPO 曲线中 Reward Margin 明显增大，说明模型在训练集上更能区分偏好答案和非偏好答案。结合实际输出，我认为 DPO 的提升主要体现在以下几个方面：
+
+\begin{enumerate}
+    \item \textbf{语气更克制。} DPO 后的回答一般更短，不太容易像基座模型那样长篇续写。
+    \item \textbf{结构更接近偏好样本。} 训练数据偏好准确、清晰、不过度冗长的回答，所以 DPO 输出也更倾向于直接给结论。
+    \item \textbf{安全性和逻辑性有一定改善。} 从模板设置来看，DPO 阶段强调事实优先、安全合规和可执行建议，这会让模型少输出一些发散内容。
+\end{enumerate}
+
+不过这次实验里，DPO 并没有完全解决事实错误。第 1、2 个 Case 中，DPO 仍然错误解释了 SFT、DPO 和 beta。这一点也提醒我：Reward Margin 上升只能说明模型在给定偏好数据上学到了区分信号，并不等于模型已经具备可靠的领域知识。如果想让它真正答好课程概念，还是需要补充更多高质量的 SFT 数据和偏好数据，尤其是覆盖 SFT、DPO、KL 惩罚、Reward Margin 等关键词的样本。
+
+\subsection{对本次实验的整体理解}
+
+综合来看，本次实验跑通了“基座模型 $\rightarrow$ SFT 模型 $\rightarrow$ DPO 模型”的基本路线。SFT 更像是在教模型“该怎么答”，DPO 更像是在进一步告诉模型“哪种回答更好”。从曲线看，两个阶段都产生了可观察的训练信号；从 Case 看，模型的输出长度和格式有改善，但事实准确性还不够稳定。
+
+我觉得这也比较符合小规模实验的情况：100 条数据和 1 轮训练可以让模型的外在风格发生变化，但很难让模型真正掌握一批新的专业概念。后续如果继续改进，我会优先增加课程相关问答数据，并且在 DPO 偏好样本里把“缩写解释错误”“概念张冠李戴”“无关续写”这几类坏回答专门列为 rejected，让偏好优化的方向更明确。
+
+\section{我遇到的问题}
+
+\vspace{10cm}
+
+\end{document}

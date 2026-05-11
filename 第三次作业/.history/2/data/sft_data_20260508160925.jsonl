@@ -1,0 +1,100 @@
+﻿{"instruction":"【SFT-001】请用一句话解释什么是机器学习","input":"","output":"机器学习是让模型从数据中学习规律，并在新样本上进行预测或决策的方法。"}
+{"instruction":"【SFT-002】什么是监督学习","input":"","output":"监督学习是利用带标签数据训练模型，使其学会从输入映射到正确输出。"}
+{"instruction":"【SFT-003】什么是无监督学习","input":"","output":"无监督学习是在没有标签的情况下发现数据结构，如聚类和降维。"}
+{"instruction":"【SFT-004】什么是强化学习","input":"","output":"强化学习通过与环境交互并接收奖励信号来学习最优策略。"}
+{"instruction":"【SFT-005】训练集和测试集有什么区别","input":"","output":"训练集用于拟合模型参数，测试集用于评估模型在未见数据上的泛化能力。"}
+{"instruction":"【SFT-006】什么是特征工程","input":"","output":"特征工程是对原始数据进行构造、筛选和变换，以提升模型效果的过程。"}
+{"instruction":"【SFT-007】什么是标签","input":"","output":"标签是监督学习中样本对应的目标答案或真实结果。"}
+{"instruction":"【SFT-008】什么是分类任务","input":"","output":"分类任务是预测离散类别，如垃圾邮件或正常邮件。"}
+{"instruction":"【SFT-009】什么是回归任务","input":"","output":"回归任务是预测连续数值，如房价或温度。"}
+{"instruction":"【SFT-010】什么是过拟合","input":"","output":"过拟合是模型在训练集表现很好但在新数据上表现变差的现象。"}
+{"instruction":"【SFT-011】什么是欠拟合","input":"","output":"欠拟合是模型过于简单，无法捕捉数据规律，训练和测试表现都较差。"}
+{"instruction":"【SFT-012】什么是泛化能力","input":"","output":"泛化能力是模型在未见样本上保持良好性能的能力。"}
+{"instruction":"【SFT-013】什么是损失函数","input":"","output":"损失函数用于衡量模型预测与真实值之间的误差，训练目标是最小化损失。"}
+{"instruction":"【SFT-014】什么是梯度下降","input":"","output":"梯度下降通过沿损失函数负梯度方向更新参数来逐步降低误差。"}
+{"instruction":"【SFT-015】学习率起什么作用","input":"","output":"学习率决定每次参数更新步长，过大可能震荡，过小会收敛缓慢。"}
+{"instruction":"【SFT-016】什么是批大小batch size","input":"","output":"batch size是每次参数更新所使用的样本数量。"}
+{"instruction":"【SFT-017】epoch是什么意思","input":"","output":"epoch表示模型完整遍历一次训练集。"}
+{"instruction":"【SFT-018】什么是随机梯度下降SGD","input":"","output":"SGD每次用小批量样本估计梯度，计算高效且有助于跳出部分局部极小。"}
+{"instruction":"【SFT-019】Adam优化器有什么特点","input":"","output":"Adam结合动量和自适应学习率，通常收敛较快且调参相对容易。"}
+{"instruction":"【SFT-020】什么是正则化","input":"","output":"正则化通过约束模型复杂度来抑制过拟合，如L2正则和dropout。"}
+{"instruction":"【SFT-021】L1和L2正则有什么区别","input":"","output":"L1倾向产生稀疏参数，L2倾向平滑缩小参数，二者都可降低过拟合风险。"}
+{"instruction":"【SFT-022】dropout的作用是什么","input":"","output":"dropout在训练时随机失活部分神经元，减少共适应并提升泛化能力。"}
+{"instruction":"【SFT-023】什么是早停early stopping","input":"","output":"早停是在验证集性能不再提升时提前结束训练，以防止过拟合。"}
+{"instruction":"【SFT-024】为什么要做数据标准化","input":"","output":"标准化可统一特征尺度，提升优化稳定性并加快收敛。"}
+{"instruction":"【SFT-025】什么是交叉验证","input":"","output":"交叉验证通过多次划分训练验证集来更稳定地估计模型性能。"}
+{"instruction":"【SFT-026】准确率适合什么场景","input":"","output":"准确率适合类别较平衡的分类任务，不平衡场景需结合精确率和召回率。"}
+{"instruction":"【SFT-027】什么是精确率precision","input":"","output":"精确率是被预测为正类的样本中真正为正类的比例。"}
+{"instruction":"【SFT-028】什么是召回率recall","input":"","output":"召回率是真正正类中被成功识别出来的比例。"}
+{"instruction":"【SFT-029】F1分数如何理解","input":"","output":"F1是精确率与召回率的调和平均，适合综合评价分类效果。"}
+{"instruction":"【SFT-030】AUC指标表示什么","input":"","output":"AUC衡量模型区分正负样本的能力，越接近1通常表示区分能力越强。"}
+{"instruction":"【SFT-031】什么是混淆矩阵","input":"","output":"混淆矩阵展示预测与真实类别的对应关系，便于分析误判类型。"}
+{"instruction":"【SFT-032】什么是数据泄漏","input":"","output":"数据泄漏是训练过程不当使用了未来信息或测试信息，导致评估结果虚高。"}
+{"instruction":"【SFT-033】为什么要固定随机种子","input":"","output":"固定随机种子有助于复现实验结果并便于对比不同方案。"}
+{"instruction":"【SFT-034】什么是基线模型","input":"","output":"基线模型是简单可复现的对照方案，用于衡量改进是否有效。"}
+{"instruction":"【SFT-035】如何提升模型可解释性","input":"","output":"可通过特征重要性、局部解释方法和规则化表达提升可解释性。"}
+{"instruction":"【SFT-036】什么是模型鲁棒性","input":"","output":"鲁棒性是模型在噪声、分布偏移或异常输入下保持稳定性能的能力。"}
+{"instruction":"【SFT-037】什么是分布偏移","input":"","output":"分布偏移是训练数据与实际应用数据分布不一致，可能导致性能下降。"}
+{"instruction":"【SFT-038】什么是迁移学习","input":"","output":"迁移学习是利用已有任务学到的表示来加速新任务训练并减少数据需求。"}
+{"instruction":"【SFT-039】微调和从零训练有什么区别","input":"","output":"微调在预训练模型基础上继续训练，通常成本更低且效果更稳定。"}
+{"instruction":"【SFT-040】提示词工程有什么价值","input":"","output":"提示词工程通过优化输入格式和约束条件提升大模型输出质量。"}
+{"instruction":"【SFT-041】什么是SFT","input":"","output":"SFT是监督微调，用高质量示范答案让模型学习目标输出风格与内容。"}
+{"instruction":"【SFT-042】什么是RLHF","input":"","output":"RLHF是结合人类反馈进行强化学习的对齐方法，用于提升回答偏好质量。"}
+{"instruction":"【SFT-043】什么是DPO","input":"","output":"DPO是基于偏好对数据直接优化模型偏好的方法，不需要单独训练奖励模型。"}
+{"instruction":"【SFT-044】DPO中的beta有什么作用","input":"","output":"beta控制偏好优化强度与对参考策略偏离的权衡，影响保守性与创造性。"}
+{"instruction":"【SFT-045】为什么需要参考模型ref model","input":"","output":"参考模型提供稳定锚点，防止优化过程过度偏离原有语言能力。"}
+{"instruction":"【SFT-046】什么是奖励边际reward margin","input":"","output":"奖励边际反映优选回答相对劣选回答的优势大小，常用于观察DPO训练趋势。"}
+{"instruction":"【SFT-047】SFT后常见问题有哪些","input":"","output":"常见问题包括模板依赖、事实性错误、风格僵化和安全边界不稳定。"}
+{"instruction":"【SFT-048】DPO相对SFT的主要提升点","input":"","output":"DPO可更直接地优化人类偏好，在语气、帮助性和安全性上常有额外提升。"}
+{"instruction":"【SFT-049】什么是灾难性遗忘","input":"","output":"灾难性遗忘是模型在学习新任务时显著丢失原有能力的现象。"}
+{"instruction":"【SFT-050】如何缓解灾难性遗忘","input":"","output":"可采用较小学习率、混合旧数据重放和参数高效微调等方法缓解遗忘。"}
+{"instruction":"【SFT-051】写一个Python函数计算平均值","input":"输入是数字列表","output":"可以写成def mean(nums): return sum(nums)/len(nums) if nums else 0.0。"}
+{"instruction":"【SFT-052】写一个判断偶数的Python函数","input":"","output":"示例：def is_even(x): return x % 2 == 0。"}
+{"instruction":"【SFT-053】如何在Python中读取jsonl文件","input":"","output":"可逐行读取并用json.loads解析，每行对应一条独立JSON记录。"}
+{"instruction":"【SFT-054】如何保存字典为json文件","input":"","output":"使用json.dump(data, f, ensure_ascii=False, indent=2)即可。"}
+{"instruction":"【SFT-055】解释try except的用途","input":"","output":"try except用于捕获并处理运行时异常，避免程序直接崩溃。"}
+{"instruction":"【SFT-056】如何在Python中遍历字典","input":"","output":"可用for k, v in d.items():进行键值遍历。"}
+{"instruction":"【SFT-057】列表推导式有什么优点","input":"","output":"列表推导式语法简洁、可读性高，适合构造简单转换后的列表。"}
+{"instruction":"【SFT-058】什么情况下用生成器","input":"","output":"当数据量大或需要按需计算时，用生成器可节省内存。"}
+{"instruction":"【SFT-059】如何解释时间复杂度O(n)","input":"","output":"O(n)表示算法执行时间随输入规模线性增长。"}
+{"instruction":"【SFT-060】如何解释空间复杂度","input":"","output":"空间复杂度描述算法随输入规模增长所需额外内存的变化。"}
+{"instruction":"【SFT-061】均值和中位数有什么区别","input":"","output":"均值受极端值影响较大，中位数更稳健地反映中心位置。"}
+{"instruction":"【SFT-062】方差表示什么","input":"","output":"方差衡量数据围绕均值的离散程度，越大表示波动越强。"}
+{"instruction":"【SFT-063】标准差和方差关系","input":"","output":"标准差是方差的平方根，量纲与原始数据一致。"}
+{"instruction":"【SFT-064】什么是协方差","input":"","output":"协方差衡量两个变量是否同向变化及变化关系方向。"}
+{"instruction":"【SFT-065】相关系数取值范围","input":"","output":"皮尔逊相关系数通常在-1到1之间，绝对值越大线性相关越强。"}
+{"instruction":"【SFT-066】什么是假设检验","input":"","output":"假设检验通过样本证据判断原假设是否应被拒绝。"}
+{"instruction":"【SFT-067】p值如何解释","input":"","output":"p值是在原假设成立时观察到当前或更极端结果的概率。"}
+{"instruction":"【SFT-068】置信区间的意义","input":"","output":"置信区间给出参数可能取值范围，并反映估计不确定性。"}
+{"instruction":"【SFT-069】什么是偏差和方差权衡","input":"","output":"高偏差会欠拟合，高方差会过拟合，建模需平衡二者。"}
+{"instruction":"【SFT-070】为什么要做误差分析","input":"","output":"误差分析能定位模型失败模式，指导更有效的改进方向。"}
+{"instruction":"【SFT-071】模型上线前应检查什么","input":"","output":"应检查性能、稳定性、延迟、资源占用、安全性和回滚方案。"}
+{"instruction":"【SFT-072】什么是推理延迟","input":"","output":"推理延迟是模型从接收输入到返回输出所需时间。"}
+{"instruction":"【SFT-073】吞吐量是什么意思","input":"","output":"吞吐量是单位时间内系统可处理请求数量。"}
+{"instruction":"【SFT-074】为什么要做监控","input":"","output":"监控可及时发现性能退化、异常请求和数据分布变化。"}
+{"instruction":"【SFT-075】什么是A/B测试","input":"","output":"A/B测试通过随机分流比较两个方案效果，支持数据驱动决策。"}
+{"instruction":"【SFT-076】什么是模型漂移","input":"","output":"模型漂移是输入分布或目标规律变化导致模型效果逐步下降。"}
+{"instruction":"【SFT-077】如何处理用户恶意输入","input":"","output":"可用输入校验、内容过滤、限流和安全规则降低风险。"}
+{"instruction":"【SFT-078】为什么需要日志审计","input":"","output":"日志审计有助于排查故障、追踪异常行为并满足合规要求。"}
+{"instruction":"【SFT-079】什么是最小权限原则","input":"","output":"最小权限原则是仅授予完成任务所必需的最小权限集合。"}
+{"instruction":"【SFT-080】API密钥应如何管理","input":"","output":"应使用环境变量或密钥管理服务，避免硬编码并定期轮换。"}
+{"instruction":"【SFT-081】如何写实验目的","input":"","output":"实验目的应明确研究问题、方法范围和预期可验证结果。"}
+{"instruction":"【SFT-082】如何描述实验设置","input":"","output":"需记录模型版本、数据来源、超参数、硬件环境和评估指标。"}
+{"instruction":"【SFT-083】如何写结果分析","input":"","output":"应结合曲线和案例比较，解释提升来源与失败场景。"}
+{"instruction":"【SFT-084】如何写消融实验结论","input":"","output":"需比较关键变量变化下的性能趋势，并说明背后原因。"}
+{"instruction":"【SFT-085】报告中如何展示对比案例","input":"","output":"建议同题展示基座、SFT、DPO输出，突出质量演进过程。"}
+{"instruction":"【SFT-086】如何描述局限性","input":"","output":"应诚实说明数据规模、算力、时间和泛化范围限制。"}
+{"instruction":"【SFT-087】如何写后续工作","input":"","output":"可从数据扩展、参数优化、评估体系和安全增强等方向提出计划。"}
+{"instruction":"【SFT-088】如何解释loss下降但体验一般","input":"","output":"loss优化不等于偏好优化，需结合人评和任务指标综合判断。"}
+{"instruction":"【SFT-089】如何解释DPO曲线波动","input":"","output":"波动可能来自小数据、采样噪声或学习率设置，需看整体趋势而非单点。"}
+{"instruction":"【SFT-090】如何给出可复现实验说明","input":"","output":"应提供依赖版本、运行命令、随机种子和数据格式示例。"}
+{"instruction":"【SFT-091】用户要求违法内容时如何回复","input":"","output":"应礼貌拒绝并提供合法、安全的替代建议。"}
+{"instruction":"【SFT-092】如何避免模型编造事实","input":"","output":"可要求引用依据、明确不确定性，并在缺乏证据时直接说明。"}
+{"instruction":"【SFT-093】面对模糊问题如何回应","input":"","output":"先给出合理假设并提供分情形答案，必要时补充澄清问题。"}
+{"instruction":"【SFT-094】如何提升回答结构化程度","input":"","output":"可使用结论先行、分点说明和简短小结的结构。"}
+{"instruction":"【SFT-095】如何控制回答长度","input":"","output":"可在提示词中设置字数上限并优先保留关键结论。"}
+{"instruction":"【SFT-096】如何让语气更友好","input":"","output":"使用尊重和鼓励表达，避免命令式和贬低性措辞。"}
+{"instruction":"【SFT-097】如何处理不确定问题","input":"","output":"应明确不确定性来源，给出可验证路径而非武断结论。"}
+{"instruction":"【SFT-098】如何做任务分解","input":"","output":"先拆目标为子任务，再按依赖关系排序并逐步执行。"}
+{"instruction":"【SFT-099】如何制定学习计划","input":"每周6小时","output":"建议每周分为理论2小时、实践3小时、复盘1小时，并每两周评估一次进度。"}
+{"instruction":"【SFT-100】请总结SFT与DPO的关系","input":"","output":"SFT先建立任务能力基础，DPO再利用偏好对齐进一步优化回答质量与风格。"}
