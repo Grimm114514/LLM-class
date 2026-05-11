@@ -1,0 +1,391 @@
+\documentclass[a4paper,12pt]{ctexart}
+
+% ==================== 宏包引入 ====================
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+
+\captionsetup[table]{position=bottom,justification=centering,singlelinecheck=false}
+\graphicspath{{第二次作业/}{第三次作业/2/}}
+
+% ==================== 页面设置 ====================
+\geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+\setlength{\emergencystretch}{3em}
+
+% ==================== 代码高亮设置 ====================
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space},
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    columns=flexible
+}
+\lstset{style=mystyle, language=Python}
+
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+% ==================== 文档信息 ====================
+\title{\textbf{大模型课程报告}\\从分词器到预训练、监督微调与偏好对齐}
+\author{姓名：张宗桪 \\ 学号：2023K8009991013 \\ 专业：人工智能}
+\date{\today}
+
+% ==================== 正文开始 ====================
+\begin{document}
+
+\pagestyle{plain}
+
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\tableofcontents
+\newpage
+
+\section{整体实验路线}
+
+本课程的三次作业共同构成了一条较完整的大模型训练链路：第一次作业从数据清洗和 BPE 分词器训练开始，解决文本如何被模型表示的问题；第二次作业在分词器和语料的基础上，从零训练一个 Decoder-only 语言模型，观察预训练过程中的 Loss 下降和文本续写能力；第三次作业进一步使用现成基座模型进行 SFT 监督微调与 DPO 偏好对齐，比较基座模型、SFT 模型和 DPO 模型在回答质量上的差异。
+
+\begin{table}[H]
+    \centering
+    \begin{tabularx}{\textwidth}{L{0.18\textwidth}L{0.25\textwidth}Y}
+        \toprule
+        阶段 & 对应作业 & 核心目标 \\
+        \midrule
+        第一阶段 & BPE 分词器训练 & 构建英文与中英混合分词器，比较不同词表大小下的编码、解码效果。 \\
+        第二阶段 & 从零预训练 MiniLlama & 使用混合语料训练 Decoder-only 模型，分析 Loss 收敛情况和生成能力。 \\
+        第三阶段 & SFT 与 DPO 对齐 & 基于 Qwen2.5-0.5B 完成监督微调和偏好优化，观察模型输出形式与回答质量的变化。 \\
+        \bottomrule
+    \end{tabularx}
+    \caption{三次作业之间的全链路关系}
+\end{table}
+
+从整体上看，三次实验分别覆盖了大模型生命周期中的三个关键环节。分词器决定了原始文本进入模型前的基本表示粒度；预训练阶段让模型通过自回归预测学习语言统计规律；SFT 和 DPO 则让模型从通用续写能力进一步转向更符合人类需求的问答能力。后文按照这一链路依次展开。
+
+\section{第一阶段：BPE 分词器构建}
+
+\subsection{实验目标}
+
+第一次作业的目标是实现并训练 BPE 分词器。实验重点不是直接训练语言模型，而是理解文本如何被切分成 Token，以及词表大小、语料类型会如何影响编码压缩率、未登录词处理能力和中英文混合场景下的分词表现。
+
+\subsection{数据集与超参数}
+
+本阶段使用两类语料：一类是课程提供的英文新闻评论数据，另一类是由新华日报官方标注数据和英文新闻评论数据组成的中英混合数据。两类数据分别用于观察纯英文场景和中英混合场景下的 BPE 行为。
+
+\begin{table}[H]
+    \centering
+    \begin{tabularx}{\textwidth}{L{0.24\textwidth}Y}
+        \toprule
+        数据集名称 & 数据内容 \\
+        \midrule
+        纯英文数据集 & 课程提供的英文新闻评论数据。 \\
+        中英混合数据集 & 一半为新华日报官方标注数据集，另一半为英文新闻评论数据。 \\
+        \bottomrule
+    \end{tabularx}
+    \caption{BPE 实验所用数据集}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabularx}{\textwidth}{L{0.30\textwidth}Y}
+        \toprule
+        参数名称 & 参数设置 \\
+        \midrule
+        词表大小 & 6400 与 16000 \\
+        最小词频 & 2 \\
+        特殊符号 & \texttt{<|endoftext|>}、\texttt{<|im\_start|>}、\texttt{<|im\_end|>} \\
+        \bottomrule
+    \end{tabularx}
+    \caption{BPE 训练核心超参数}
+\end{table}
+
+预处理方面，中文数据主要去除词性标注，将类似 \texttt{[中国/ns 人民/n]nt} 的内容转换为更干净的文本片段；英文数据主要将单词与标点分开，避免 BPE 在训练时出现跨词合并。经过清洗后，BPE 从基础字符单元开始，反复统计相邻 Token 对频次，并将最高频的符号对合并为新的 Token，直到词表达到预设规模或不存在满足最小词频的候选符号对。
+
+\subsection{编码与解码结果}
+
+为了比较不同语料和词表大小的影响，实验选取若干代表性词语进行编码测试。结果如下：
+
+\begin{table}[H]
+    \centering
+    \small
+    \setlength{\tabcolsep}{3pt}
+    \begin{tabularx}{\textwidth}{L{0.16\textwidth}L{0.18\textwidth}L{0.18\textwidth}L{0.18\textwidth}L{0.18\textwidth}}
+        \toprule
+        测试词语 & 英文-6400 & 英文-16000 & 中英混合-6400 & 中英混合-16000 \\
+        \midrule
+        \texttt{are} & \textbf{245} & \textbf{245} & \textbf{3917} & \textbf{3917} \\
+        \texttt{China} & \textbf{456} & \textbf{456} & \textbf{4255} & \textbf{4255} \\
+        \texttt{人大} & \textbf{None} & \textbf{None} & \textbf{5463} & \textbf{5463} \\
+        \texttt{俄罗斯} & \textbf{None} & \textbf{None} & \textbf{5085} & \textbf{5085} \\
+        \bottomrule
+    \end{tabularx}
+    \caption{词语在不同数据集与词表大小下的编码对比}
+\end{table}
+
+英文句子 \texttt{How are you ?} 在不同词表下的编码结果如下：
+
+\begin{table}[H]
+    \centering
+    \begin{tabularx}{\textwidth}{L{0.24\textwidth}Y L{0.14\textwidth}}
+        \toprule
+        词表配置 & Token ID 序列 & Token 数 \\
+        \midrule
+        英文-6400 & [2430, 245, 1014, 32] & 4 \\
+        英文-16000 & [2430, 245, 1014, 32] & 4 \\
+        中英混合-6400 & [39, 4082, 3917, 5614, 31] & 5 \\
+        中英混合-16000 & [8410, 3917, 5614, 31] & 4 \\
+        \bottomrule
+    \end{tabularx}
+    \caption{英文句子在不同词表配置下的编码结果}
+\end{table}
+
+可以看到，在中英混合语料中，当词表大小由 6400 提升到 16000 后，\texttt{How} 可以由更完整的 Token 表示，整句 Token 数从 5 降到 4。这说明更大的词表能够记录更多高频子词或完整词，从而提升文本压缩率。
+
+中文测试句子使用姓名 \texttt{张宗桪}。在中英混合词表中，其编码结果为 [1188, 979, 0]，解码后得到 \texttt{张宗 }。这说明 BPE 面对未登录词时不会完全失效，而是会回退到更细粒度的子词或单字；但对于生僻字，如果训练语料中覆盖不足，仍可能出现映射到特殊 Token 或无法完整还原的情况。
+
+\subsection{阶段小结}
+
+第一阶段说明，分词器不仅是文本输入模型前的技术步骤，也会直接影响后续模型训练效率和文本表达能力。较大的词表通常可以降低 Token 数，提高序列压缩率，但也会增加 Embedding 参数量；中英混合语料可以增强中文词汇覆盖，但如果语料分布不均衡或清洗不充分，也会影响分词质量。因此，分词器训练需要在词表规模、数据覆盖和硬件资源之间取得平衡。
+
+\section{第二阶段：从零训练 Decoder-only 模型}
+
+\subsection{实验目标}
+
+第二次作业在第一阶段的基础上，进一步构建并训练一个小规模 Decoder-only 语言模型。实验目标是跑通从语料准备、分词、模型训练到文本生成的预训练流程，并通过 Loss 曲线和续写样例分析模型是否学到了基本语言规律。
+
+\subsection{数据与模型配置}
+
+实验采用新华日报官方标注集和 THUCNews 混合生成的语料库。为了兼顾训练效率与模型效果，最终语料规模控制在约 300MB，序列截断长度设为 512。模型结构采用类似 LLaMA 的 Decoder-only 架构，核心参数如下：
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lc}
+        \toprule
+        参数名称 & 设定值 \\
+        \midrule
+        隐藏层维度 & 512 \\
+        注意力头数 & 8 \\
+        网络层数 & 6 \\
+        FeedForward 维度 & 2048 \\
+        激活函数 & GELU \\
+        \bottomrule
+    \end{tabular}
+    \caption{MiniLlama 模型核心参数}
+\end{table}
+
+训练时使用 AdamW 优化器，学习率设为 \texttt{1e-4}，并配合 \texttt{weight\_decay=0.01}。学习率调度采用余弦退火策略；训练过程中开启 \texttt{bfloat16} 混合精度，Batch Size 设为 32，并使用阈值为 1.0 的梯度裁剪以增强训练稳定性。
+
+\subsection{训练 Loss 曲线}
+
+训练过程中的 Loss 曲线如下：
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{loss_curve_20260418_152103.png}
+    \caption{从零预训练过程 Loss 下降曲线}
+    \label{fig:pretrain-loss}
+\end{figure}
+
+从图 \ref{fig:pretrain-loss} 可以看到，模型 Loss 从初始约 10.2 快速下降，最终在约 15000 个 Step 后稳定在 5.0 附近。训练前期 Loss 下降最明显，说明模型从随机初始化状态开始，逐渐学习到基础词汇分布和局部语言规律；随着训练进入后期，Loss 曲线逐渐变平，模型开始接近当前模型规模、数据规模和训练轮数下的收敛水平。
+
+\subsection{文本续写结果}
+
+使用训练得到的权重进行推理测试，给定前缀后的生成结果如下。
+
+\begin{flushleft}
+\textbf{Prompt：} 我是一个粉刷匠。\\[0.5em]
+\textbf{Continuation：}
+\begin{quote}
+我 是一个 粉 刷 匠 。 虽然 只有 没有 小 贩 卖 , 所以 将 她 就 能 将 去 找 出 , 而且 她 对 她 带 走 我 很 小 了 自己的 小 米 , 但 这 不 知道 了 , 所以 她 要 这样 的一 局 把 自己 , 他 因为 她 就 要 对 爱 情 , 所以 她 决定 找 来 找 著 她 , 但是 她 一直 找 出 色的 孩 子的 生活 , 她 更 像 与 她 相 逢 , 但 她 表示 她的 生活 , 并且 自己 是 和 亲 情 , 是 这 么 对 这 么 。 但 她 不 起 , 她在 她 想 就 能 找到 自己的 男人 , 因为 她 也 就 喜欢 和 她 的 她 生活 。 然而
+\end{quote}
+\end{flushleft}
+
+\begin{flushleft}
+\textbf{Prompt：}中国科学院大学是\\[0.5em]
+\textbf{Continuation：}
+\begin{quote}
+中国科学院 大学 是 该校 的 博士 。 大学 的 学部 学系 中 课程 也是 艺术 运动 会的 学生 , 一个 大学 学生 在 学 上 获得 教师 。   大学 校园 的 课程 和 学 和 课程 的 教学 是 , 学院 学生 学 、 教师 和 学 等 教育 课程 , 与 高中 生 之间 , 在 学院 时期 , 学院 课程 管理 , 学生 与 讲 学 。   校 史  *   中 立 大学 短期大学 与 研究生 学院 , 学校 学习 。 该校 为 英语 大学 , 校 生 、 体育 学 、 学 硕士 , 教育 学 博士 生 , 研究生 学位 , 校 生 导师 。   学生   *   中 立 大学 , 数学 学 和 讲 学 , 课程 。   *
+\end{quote}
+\end{flushleft}
+
+\subsection{阶段小结}
+
+从 Loss 曲线看，模型训练过程整体稳定，没有明显梯度爆炸或剧烈震荡，说明模型结构和训练超参数能够支持基本的自回归语言建模。从生成结果看，模型已经学到了一些中文词汇搭配、标点使用和句子节奏，但仍然存在语义不连贯、事实幻觉和长程逻辑不足的问题。考虑到模型参数量只有约 18M，语料规模约 300MB，当前结果符合小模型预训练的预期：模型能够学习局部统计规律，但还难以形成稳定的事实知识和长程推理能力。
+
+\section{第三阶段：SFT 监督微调与 DPO 偏好对齐}
+
+\subsection{实验目标}
+
+第三次作业从“从零训练”转向“基于已有基座模型对齐”。本阶段以 \texttt{Qwen/Qwen2.5-0.5B} 作为基座模型，比较三个阶段的输出差异：原始基座模型、经过 SFT 监督微调后的模型，以及继续经过 DPO 偏好对齐后的模型。整体目标是观察 SFT 是否能改善回答格式和任务遵循能力，以及 DPO 是否能让模型更偏向高质量回答。
+
+\subsection{数据与训练设置}
+
+实验数据分为 SFT 数据和 DPO 偏好数据两部分。SFT 数据每条样本包含用户指令、可选输入信息和标准回答；DPO 数据每条样本包含同一个问题下的优质回答和劣质回答。这样设计的原因是：SFT 更适合教模型“应该怎样回答”，DPO 更适合教模型“哪种回答更好”。
+
+\begin{table}[H]
+    \centering
+    \begin{tabularx}{\textwidth}{L{0.22\textwidth}L{0.18\textwidth}Y}
+        \toprule
+        数据类型 & 样本数量 & 构造方式 \\
+        \midrule
+        SFT 数据 & 100 条 & 使用“用户指令 + 输入信息 + 标准回答”的形式，训练模型模仿目标回答。 \\
+        DPO 偏好数据 & 100 条 & 使用“问题 + chosen + rejected”的形式，其中 chosen 是更符合要求的回答，rejected 是质量较差的回答。 \\
+        \bottomrule
+    \end{tabularx}
+    \caption{SFT 与 DPO 数据构造}
+\end{table}
+
+训练只进行 1 轮，主要用于观察微调和偏好优化带来的趋势变化。关键参数如下：
+
+\begin{table}[H]
+    \centering
+    \begin{tabularx}{\textwidth}{L{0.30\textwidth}L{0.28\textwidth}L{0.28\textwidth}}
+        \toprule
+        参数 & SFT 阶段 & DPO 阶段 \\
+        \midrule
+        初始模型 & \texttt{Qwen/Qwen2.5-0.5B} & SFT 后的模型 \\
+        训练数据量 & 100 条 & 100 条偏好样本 \\
+        等效 batch size & 4 & 4 \\
+        学习率 & \texttt{2e-5} & \texttt{5e-6} \\
+        训练轮数 & 1 & 1 \\
+        最大长度 & 512 & - \\
+        DPO 的 \texttt{beta} & - & 0.1 \\
+        参考模型 & - & SFT 后的模型 \\
+        \bottomrule
+    \end{tabularx}
+    \caption{SFT 与 DPO 关键训练参数}
+\end{table}
+
+DPO 中的 \texttt{beta} 控制模型偏离参考模型的程度。本实验设置为 0.1，含义是既希望模型学习偏好数据，又不希望它过度偏离 SFT 模型。由于数据量较小、训练轮数较少，整体训练设置偏保守。
+
+\subsection{SFT 训练结果}
+
+SFT 阶段的训练 Loss 曲线如下：
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.82\textwidth]{fig_sft_loss.png}
+    \caption{SFT Training Loss Curve}
+    \label{fig:sft-loss-final}
+\end{figure}
+
+从图 \ref{fig:sft-loss-final} 可以看到，Loss 在前半段下降较明显，从较高位置很快降到 1 以下，后续继续下降但速度变慢，中间有一次小幅波动。这说明模型逐渐适应了 SFT 数据中的固定回答格式，开始学习“先给结论，再给解释，最后补充注意事项”的输出结构。后期波动可能与数据量较小、batch 较小有关。
+
+\subsection{DPO 训练结果}
+
+DPO 阶段的 Reward Margin 曲线如下：
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.82\textwidth]{fig_dpo_reward_margin.png}
+    \caption{DPO Reward Margin Curve}
+    \label{fig:dpo-margin-final}
+\end{figure}
+
+Reward Margin 可以理解为模型对优质回答和劣质回答的隐式打分差距。图 \ref{fig:dpo-margin-final} 中，Reward Margin 总体从较低位置上升到 1 以上，说明训练过程中模型越来越能区分 \texttt{chosen} 和 \texttt{rejected}。最后一个点略有下降，但仍明显高于初始值，因此整体趋势仍然说明 DPO 学到了一部分偏好信号。
+
+\subsection{Case 对比结果}
+
+为了更直观看出微调前后的变化，实验选取 3 个相同测试问题，对比基座模型、SFT 模型和 DPO 模型的输出表现。
+
+{\small
+\begin{longtable}{L{0.20\textwidth}L{0.22\textwidth}L{0.22\textwidth}L{0.22\textwidth}}
+    \toprule
+    测试问题 & 基座模型输出表现 & SFT 模型输出表现 & DPO 模型输出表现 \\
+    \midrule
+    什么是 SFT 和 DPO，它们分别解决什么问题？
+    & 基座模型没有回答当前问题，而是转到 Python 列表示例，明显出现了跑题和续写模板的问题。
+    & SFT 模型给出了缩写解释，但把 SFT 和 DPO 理解成了状态转换函数、决策探索策略，事实不正确。
+    & DPO 模型回答更短，但仍把 SFT/DPO 解释成其他含义，没有真正答到微调和偏好优化。 \\
+    \midrule
+    为什么 DPO 中要设置 beta 参数？
+    & 基座模型只泛泛地说 beta 太大或太小会影响稳定性，没有联系 DPO。
+    & SFT 模型把 beta 解释成金融领域的风险指标，属于概念迁移错误。
+    & DPO 模型仍然把 DPO 误解成动态规划优化，但回答结构更完整，也提到了 beta 控制权重和收敛。 \\
+    \midrule
+    如何平衡“遵规蹈矩”和“创造力”？
+    & 基座模型回答很长，并继续生成多个无关问答，存在明显的无脑续写。
+    & SFT 模型输出明显变短，能围绕“规范”和“创新”给出一句话回答。
+    & DPO 模型也比较简短，但内容过于概括，信息量不足。 \\
+    \bottomrule
+    \caption{基座模型、SFT 模型与 DPO 模型的 Case 对比}
+\end{longtable}
+}
+
+从 Case 对比看，模型的变化并不是“直接变聪明”，而是更像先学会了回答形式，再逐渐减少部分无关续写。第 3 个问题中，基座模型会连续补出很多不相关问答，而 SFT 和 DPO 后的输出明显短了很多，说明微调确实约束了一部分生成习惯。但第 1、2 个问题也说明，如果训练数据没有覆盖足够多课程概念，模型仍然会把缩写解释错，事实准确性无法只依靠少量 SFT 或 DPO 数据解决。
+
+\subsection{阶段小结}
+
+第三阶段跑通了“基座模型 $\rightarrow$ SFT 模型 $\rightarrow$ DPO 模型”的基本路线。SFT 更像是在教模型“该怎么答”，让输出更接近指定格式；DPO 则进一步告诉模型“哪种回答更好”，让回答更克制、更少无关续写。从曲线看，两个阶段都产生了可观察的训练信号；从 Case 看，模型输出长度和格式有所改善，但专业事实准确性仍不稳定。对于小规模数据实验而言，这一结果说明微调能较快改变模型输出风格，但要让模型稳定掌握领域知识，还需要更高质量、更有覆盖面的课程相关数据。
+
+\section{全流程总结}
+
+综合三次作业，可以把本课程实验理解为一个从底层表示到上层对齐的递进过程。
+
+首先，BPE 分词器解决的是“文本如何进入模型”的问题。不同词表大小和不同语料来源会影响 Token 粒度、编码压缩率以及未登录词处理效果。实验中，中英混合词表能够覆盖中文词汇，而更大的词表可以降低英文句子的 Token 数，但也会带来更高的参数和训练资源需求。
+
+其次，从零预训练解决的是“模型如何学习语言规律”的问题。MiniLlama 在 300MB 混合语料上训练后，Loss 能够稳定下降，生成文本也表现出一定的词汇搭配和句子结构能力。但小模型和有限语料的限制很明显：它能学到局部统计规律，却很难保持长程语义一致，也容易出现事实幻觉。
+
+最后，SFT 和 DPO 解决的是“模型如何更像一个可用助手”的问题。SFT 能让模型学习目标回答格式，DPO 能进一步利用偏好样本约束回答风格和质量。实验结果表明，少量数据也能改变模型输出形式，减少无关续写，但无法完全补足专业知识和事实准确性。因此，完整的大模型训练链路需要同时关注数据质量、模型规模、训练稳定性、评估方法和对齐目标。
+
+\section{问题与解决总结}
+
+% TODO: 本节用于统一总结整个“从 0 到 1”训练生命周期中遇到的最大工程阻碍。
+% 建议不要按三次作业逐篇复制，而是按照问题类型归纳，例如：
+% 1. 环境配置问题；
+% 2. 数据清洗与格式问题；
+% 3. 显存或内存不足问题；
+% 4. Loss 不下降或训练不稳定问题；
+% 5. 推理评估、Prompt Template 与代码 bug 问题。
+%
+% 可以采用“问题现象 -> 原因定位 -> 解决方法 -> 收获”的结构来写。
+
+\subsection{问题一：环境配置与依赖管理}
+
+% 在这里补充环境配置中遇到的问题、定位过程和解决方法。
+
+\subsection{问题二：数据清洗与格式一致性}
+
+% 在这里补充数据格式、特殊字符、标注清洗、Prompt Template 等相关问题。
+
+\subsection{问题三：训练资源与稳定性}
+
+% 在这里补充 OOM、显存不足、Loss 不下降、梯度异常、训练速度等问题。
+
+\subsection{问题四：代码调试与评估修正}
+
+% 在这里补充代码 bug、生成结果异常、评估脚本调整等问题。
+
+\subsection{个人总结}
+
+% 在这里总结你对“从 0 到 1”训练大模型流程的整体理解和收获。
+
+\end{document}
